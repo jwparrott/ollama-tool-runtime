@@ -1,0 +1,8 @@
+[
+  {
+    "name": "example_echo",
+    "module": "tools.custom.example_echo",
+    "enabled": true
+  }
+]
+
