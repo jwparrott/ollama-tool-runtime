@@ -8,6 +8,10 @@ For complete command, architecture, function, and operations documentation, star
 
 - [docs/README.md](./docs/README.md)
 
+For fresh Windows/Linux bootstrap scripts (install + configure + model pull), see:
+
+- [docs/install-scripts.md](./docs/install-scripts.md)
+
 ## What it does
 
 - Runs a tool-enabled chat loop against local Ollama.
@@ -25,6 +29,7 @@ For complete command, architecture, function, and operations documentation, star
 - `agent_runtime/`: runtime implementation
 - `tools/custom/`: user/custom tools
 - `tools/registry.json`: tool registration data
+- `scripts/`: fresh-system install/configuration scripts
 - `.runtime/snapshots/`: generated rollback snapshots
 - `tests/`: unit tests
 
@@ -38,6 +43,7 @@ For complete command, architecture, function, and operations documentation, star
 
 ```powershell
 python -m unittest discover -s tests
+bash ./scripts/install_configure_linux.sh
 python main.py setup
 python main.py list-tools
 python main.py chat --model llama3.1 --prompt "List the tools you can use."
@@ -50,8 +56,8 @@ python main.py gui --model llama3.1 --no-voice
 
 ```powershell
 python main.py chat --model llama3.1 --prompt "Hello"
-python main.py chat-interactive --model llama3.1 --max-steps 12
-python main.py gui --model llama3.1 --max-steps 12
+python main.py chat-interactive --max-steps 12
+python main.py gui --max-steps 12
 python main.py gui --model llama3.1 --no-voice
 python main.py setup
 python main.py list-tools

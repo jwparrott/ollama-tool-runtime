@@ -14,6 +14,7 @@ Core files:
 2. `ToolChatEngine` sends:
    - message history
    - full tool specs
+   - context window (`options.num_ctx`)
    to Ollama via `POST /api/chat`.
 3. Model returns either:
    - normal assistant content
@@ -49,4 +50,3 @@ Tool specs are sent in Ollama function-tool format:
 - Keeps model actions explicit and inspectable through tools.
 - Allows controlled extension via registry and module loading.
 - Enables self-modification with rollback protections.
-

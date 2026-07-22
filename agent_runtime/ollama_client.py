@@ -9,11 +9,18 @@ class OllamaClient:
     def __init__(self, base_url: str) -> None:
         self._chat_url = f"{base_url.rstrip('/')}/api/chat"
 
-    def chat(self, model: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
+    def chat(
+        self,
+        model: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        context_window_tokens: int,
+    ) -> dict[str, Any]:
         payload = {
             "model": model,
             "messages": messages,
             "tools": tools,
+            "options": {"num_ctx": context_window_tokens},
             "stream": False,
         }
         body = json.dumps(payload).encode("utf-8")
@@ -27,4 +34,3 @@ class OllamaClient:
             raise RuntimeError(f"Ollama request failed: HTTP {exc.code}: {detail}") from exc
         except error.URLError as exc:
             raise RuntimeError(f"Cannot connect to Ollama at {self._chat_url}: {exc}") from exc
-

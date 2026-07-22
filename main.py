@@ -33,15 +33,23 @@ def cli() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     chat = sub.add_parser("chat", help="Run one tool-enabled chat turn.")
-    chat.add_argument("--model", required=True, help="Ollama model name")
+    chat.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
+    chat.add_argument("--context-window", type=int, default=0, help="Context window tokens (defaults to configured setting)")
     chat.add_argument("--prompt", required=True, help="User prompt")
 
     chat_interactive = sub.add_parser("chat-interactive", help="Run an interactive multi-turn tool-enabled chat.")
-    chat_interactive.add_argument("--model", required=True, help="Ollama model name")
+    chat_interactive.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
+    chat_interactive.add_argument(
+        "--context-window",
+        type=int,
+        default=0,
+        help="Context window tokens (defaults to configured setting)",
+    )
     chat_interactive.add_argument("--max-steps", type=int, default=12, help="Maximum tool loop steps per turn")
 
     gui = sub.add_parser("gui", help="Run desktop GUI chat window.")
-    gui.add_argument("--model", required=True, help="Ollama model name")
+    gui.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
+    gui.add_argument("--context-window", type=int, default=0, help="Context window tokens (defaults to configured setting)")
     gui.add_argument("--max-steps", type=int, default=12, help="Maximum tool loop steps per turn")
     gui.add_argument("--no-voice", action="store_true", help="Disable speech-to-text and text-to-speech")
 
@@ -68,14 +76,24 @@ def cli() -> None:
         return
 
     settings: RuntimeSettings = settings_manager.ensure_initialized(interactive=sys.stdin.isatty())
+    resolved_model = args.model if hasattr(args, "model") and args.model else settings.default_model
+    resolved_context_window = (
+        args.context_window
+        if hasattr(args, "context_window") and args.context_window and args.context_window > 0
+        else settings.context_window_tokens
+    )
 
     if args.command == "chat":
-        result = engine.run(model=args.model, user_prompt=args.prompt)
+        result = engine.run(
+            model=resolved_model,
+            user_prompt=args.prompt,
+            context_window_tokens=resolved_context_window,
+        )
         print(result)
         return
 
     if args.command == "chat-interactive":
-        session = engine.start_session(model=args.model)
+        session = engine.start_session(model=resolved_model, context_window_tokens=resolved_context_window)
         print("Interactive chat started. Type 'exit' or 'quit' to stop.")
         while True:
             try:
@@ -94,10 +112,10 @@ def cli() -> None:
     if args.command == "gui":
         from agent_runtime.gui import run_chat_gui
 
-        session = engine.start_session(model=args.model)
+        session = engine.start_session(model=resolved_model, context_window_tokens=resolved_context_window)
         run_chat_gui(
             session=session,
-            model=args.model,
+            model=resolved_model,
             max_steps=args.max_steps,
             enable_voice=(settings.enable_voice_in_gui and not args.no_voice),
             speak_replies_default=settings.speak_replies_by_default,

@@ -9,11 +9,19 @@ from agent_runtime.engine import ToolChatEngine
 class _FakeClient:
     def __init__(self) -> None:
         self.calls: list[list[dict[str, Any]]] = []
+        self.context_windows: list[int] = []
 
-    def chat(self, model: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
+    def chat(
+        self,
+        model: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        context_window_tokens: int,
+    ) -> dict[str, Any]:
         _ = model
         _ = tools
         self.calls.append([dict(m) for m in messages])
+        self.context_windows.append(context_window_tokens)
         return {"message": {"content": "ok", "tool_calls": []}}
 
 
@@ -54,8 +62,15 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(client.calls[0][1]["content"], "turn one")
         self.assertEqual(client.calls[1][-1]["content"], "turn two")
         self.assertTrue(any(msg.get("role") == "assistant" for msg in client.calls[1]))
+        self.assertEqual(client.context_windows, [8192, 8192])
+
+    def test_context_window_override(self) -> None:
+        client = _FakeClient()
+        engine = ToolChatEngine(client=client, registry=_FakeRegistry(), builtin_tools=_FakeBuiltins())
+        reply = engine.run(model="fake", user_prompt="hello", context_window_tokens=16384)
+        self.assertEqual(reply, "ok")
+        self.assertEqual(client.context_windows, [16384])
 
 
 if __name__ == "__main__":
     unittest.main()
-

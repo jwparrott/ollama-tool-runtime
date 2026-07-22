@@ -15,21 +15,34 @@ SYSTEM_PROMPT = (
 
 
 class ToolChatSession:
-    def __init__(self, engine: ToolChatEngine, model: str) -> None:
+    def __init__(self, engine: ToolChatEngine, model: str, context_window_tokens: int) -> None:
         self._engine = engine
         self._model = model
+        self._context_window_tokens = context_window_tokens
         self._messages: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
 
     def ask(self, user_prompt: str, max_steps: int = 12) -> str:
         self._messages.append({"role": "user", "content": user_prompt})
-        return self._engine.run_with_messages(model=self._model, messages=self._messages, max_steps=max_steps)
+        return self._engine.run_with_messages(
+            model=self._model,
+            messages=self._messages,
+            max_steps=max_steps,
+            context_window_tokens=self._context_window_tokens,
+        )
 
 
 class ToolChatEngine:
-    def __init__(self, client: OllamaClient, registry: ToolRegistry, builtin_tools: BuiltinTools) -> None:
+    def __init__(
+        self,
+        client: OllamaClient,
+        registry: ToolRegistry,
+        builtin_tools: BuiltinTools,
+        default_context_window_tokens: int = 8192,
+    ) -> None:
         self.client = client
         self.registry = registry
         self.builtin_tools = builtin_tools
+        self.default_context_window_tokens = default_context_window_tokens
 
     def _all_tool_specs(self) -> list[dict[str, Any]]:
         return self.builtin_tools.specs() + self.registry.get_specs()
@@ -41,11 +54,23 @@ class ToolChatEngine:
         tool_fn = self.registry.get_callable(name)
         return tool_fn(args, {"runtime": "ollama-tool-runtime"})
 
-    def run_with_messages(self, model: str, messages: list[dict[str, Any]], max_steps: int = 12) -> str:
+    def run_with_messages(
+        self,
+        model: str,
+        messages: list[dict[str, Any]],
+        max_steps: int = 12,
+        context_window_tokens: int | None = None,
+    ) -> str:
         tools = self._all_tool_specs()
+        resolved_context_window_tokens = context_window_tokens or self.default_context_window_tokens
 
         for _ in range(max_steps):
-            response = self.client.chat(model=model, messages=messages, tools=tools)
+            response = self.client.chat(
+                model=model,
+                messages=messages,
+                tools=tools,
+                context_window_tokens=resolved_context_window_tokens,
+            )
             message = response.get("message", {})
             assistant_content = message.get("content", "")
             tool_calls = message.get("tool_calls") or []
@@ -79,12 +104,27 @@ class ToolChatEngine:
 
         return "Stopped after max_steps without final response."
 
-    def run(self, model: str, user_prompt: str, max_steps: int = 12) -> str:
+    def run(
+        self,
+        model: str,
+        user_prompt: str,
+        max_steps: int = 12,
+        context_window_tokens: int | None = None,
+    ) -> str:
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ]
-        return self.run_with_messages(model=model, messages=messages, max_steps=max_steps)
+        return self.run_with_messages(
+            model=model,
+            messages=messages,
+            max_steps=max_steps,
+            context_window_tokens=context_window_tokens,
+        )
 
-    def start_session(self, model: str) -> ToolChatSession:
-        return ToolChatSession(engine=self, model=model)
+    def start_session(self, model: str, context_window_tokens: int | None = None) -> ToolChatSession:
+        return ToolChatSession(
+            engine=self,
+            model=model,
+            context_window_tokens=context_window_tokens or self.default_context_window_tokens,
+        )

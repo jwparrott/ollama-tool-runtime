@@ -25,14 +25,17 @@ python main.py setup
 Questions:
 1. Enable voice in GUI?
 2. Speak replies by default? (only asked when voice enabled)
+3. Choose default model from numbered list (or manual entry)
+4. Set default context window token size
 
 ## Current settings fields
 
 - `version`: schema version
 - `enable_voice_in_gui`: default voice availability
 - `speak_replies_by_default`: initial checkbox value in GUI
+- `default_model`: model used when CLI/GUI omits `--model`
+- `context_window_tokens`: default Ollama context window (`num_ctx`)
 
 ## Override behavior
 
 Even if voice is enabled in settings, command-line `--no-voice` on `gui` disables it for that run.
-
