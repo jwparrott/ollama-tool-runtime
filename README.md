@@ -77,6 +77,12 @@ python main.py run-tests
 python main.py setup
 ```
 
+## Installer scripts
+
+- The bootstrap scripts in `scripts/` fetch the current popular model suggestions from Ollama's library page instead of using a stale hardcoded list.
+- Manual model entry accepts common near-matches such as `gemma 3` or `deepseek r1 7b` and resolves them to canonical Ollama model names when possible.
+- Ollama-specific steps such as `ollama pull` are skipped when the `ollama` command is not yet available in the current shell after installation.
+
 ## How self-update safety works
 
 1. Before applying updates, the runtime creates a snapshot zip.

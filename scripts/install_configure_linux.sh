@@ -51,12 +51,28 @@ ask_positive_int() {
 }
 
 choose_model() {
-  local models=(
-    "llama3.1:8b"
-    "llama3.1:70b"
-    "qwen2.5:7b"
-    "mistral:7b"
-  )
+  local models=()
+  if mapfile -t models < <(cd "$REPO_ROOT" && python3 -m agent_runtime.install_support list-models --limit 5 2>/dev/null); then
+    :
+  else
+    echo "Could not retrieve suggested models from ollama.com. Falling back to built-in suggestions." >&2
+    models=(
+      "llama3.1"
+      "deepseek-r1"
+      "nomic-embed-text"
+      "llama3.2"
+      "gemma3"
+    )
+  fi
+  if (( ${#models[@]} == 0 )); then
+    models=(
+      "llama3.1"
+      "deepseek-r1"
+      "nomic-embed-text"
+      "llama3.2"
+      "gemma3"
+    )
+  fi
   echo "Choose model to configure:"
   local i
   for i in "${!models[@]}"; do
@@ -84,11 +100,48 @@ choose_model() {
         echo "Model name cannot be blank."
         continue
       fi
-      echo "$manual"
+      local resolved=""
+      if resolved="$(printf '%s\n' "$manual" | (cd "$REPO_ROOT" && python3 -m agent_runtime.install_support resolve-model --limit 5 2>/dev/null))"; then
+        resolved="${resolved#"${resolved%%[![:space:]]*}"}"
+        resolved="${resolved%"${resolved##*[![:space:]]}"}"
+      else
+        resolved="$manual"
+      fi
+      if [[ -n "$resolved" && "$resolved" != "$manual" ]]; then
+        echo "Using resolved model name '$resolved'." >&2
+      fi
+      echo "${resolved:-$manual}"
       return 0
     fi
     echo "Please choose a number between 1 and $(( ${#models[@]} + 1 ))."
   done
+}
+
+ollama_available() {
+  command -v ollama >/dev/null 2>&1
+}
+
+ensure_ollama_available() {
+  if ollama_available; then
+    return 0
+  fi
+  echo "Ollama is not available in the current shell yet. Skipping Ollama-specific steps for now." >&2
+  echo "If Ollama was just installed, open a new terminal after setup completes and run 'ollama serve' or rerun this script." >&2
+  return 1
+}
+
+start_ollama_service_if_available() {
+  if ! ensure_ollama_available; then
+    return 1
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    sudo systemctl enable --now ollama || true
+  fi
+  if ! pgrep -x ollama >/dev/null 2>&1; then
+    nohup ollama serve >/tmp/ollama-serve.log 2>&1 &
+    sleep 3
+  fi
+  return 0
 }
 
 install_with_pm() {
@@ -165,7 +218,13 @@ if ask_yes_no "Enable voice in GUI by default?" "yes"; then
   fi
 fi
 
-if ask_yes_no "Pull model '$MODEL_NAME' now?" "yes"; then
+step "Starting Ollama service"
+OLLAMA_READY=false
+if start_ollama_service_if_available; then
+  OLLAMA_READY=true
+fi
+
+if [[ "$OLLAMA_READY" == "true" ]] && ask_yes_no "Pull model '$MODEL_NAME' now?" "yes"; then
   ollama pull "$MODEL_NAME"
 fi
 
@@ -186,24 +245,19 @@ path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
 print(f"Saved settings to {path}")
 PY
 
-step "Starting Ollama service"
-if command -v systemctl >/dev/null 2>&1; then
-  sudo systemctl enable --now ollama || true
-fi
-if ! pgrep -x ollama >/dev/null 2>&1; then
-  nohup ollama serve >/tmp/ollama-serve.log 2>&1 &
-  sleep 3
-fi
-
 step "Running tests"
 (cd "$REPO_ROOT" && python3 -m unittest discover -s tests)
 
 if ask_yes_no "Launch GUI now?" "yes"; then
-  NO_VOICE_ARG=""
-  if [[ "$ENABLE_VOICE" != "true" ]]; then
-    NO_VOICE_ARG="--no-voice"
+  if ensure_ollama_available; then
+    NO_VOICE_ARG=""
+    if [[ "$ENABLE_VOICE" != "true" ]]; then
+      NO_VOICE_ARG="--no-voice"
+    fi
+    (cd "$REPO_ROOT" && python3 main.py gui --model "$MODEL_NAME" --context-window "$CONTEXT_WINDOW" $NO_VOICE_ARG)
+  else
+    echo "Skipping GUI launch because Ollama is not available in the current shell." >&2
   fi
-  (cd "$REPO_ROOT" && python3 main.py gui --model "$MODEL_NAME" --context-window "$CONTEXT_WINDOW" $NO_VOICE_ARG)
 fi
 
 step "Setup complete"

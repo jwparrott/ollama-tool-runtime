@@ -12,7 +12,7 @@ This repository includes interactive bootstrap scripts for new Windows or Linux 
 1. Install required dependencies (Git, Python, Ollama) when missing.
 2. Ask yes/no questions for optional voice dependencies.
 3. Ask whether to download a model now (`ollama pull`).
-4. Show a numbered list of common models and allow manual model name entry.
+4. Fetch the current popular model suggestions from Ollama's library page and allow manual model name entry.
 5. Ask for context window token size.
 6. Write runtime settings to `.runtime/settings.json`.
 7. Start Ollama service/process.
@@ -21,15 +21,19 @@ This repository includes interactive bootstrap scripts for new Windows or Linux 
 
 ## Model selection behavior
 
-Both scripts present a numbered list:
+Both scripts fetch the current popular models from `https://ollama.com/library?sort=popular` and present them as a numbered list. If that request fails, they fall back to a built-in list.
 
-1. `llama3.1:8b`
-2. `llama3.1:70b`
-3. `qwen2.5:7b`
-4. `mistral:7b`
-5. Manual model name entry
+The manual entry option also resolves common near-matches against the suggested models, for example:
 
-You select by typing the number.
+- `gemma 3` -> `gemma3`
+- `deepseek r1 7b` -> `deepseek-r1:7b`
+
+Unknown names are still accepted as entered.
+
+## Ollama availability behavior
+
+- The scripts only run `ollama pull`, start the Ollama service, or launch the GUI when the `ollama` command is actually available in the current shell/session.
+- If Ollama was just installed but is not yet on `PATH`, the scripts finish configuration and explain that you may need to open a new terminal and rerun Ollama-specific steps.
 
 ## Run on Windows
 
@@ -50,4 +54,3 @@ bash ./scripts/install_configure_linux.sh
 ## Re-running
 
 These scripts are safe to rerun for reconfiguration and can update model/context/settings on later runs.
-
