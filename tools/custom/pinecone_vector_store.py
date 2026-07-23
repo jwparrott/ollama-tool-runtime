@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+DEFAULT_INDEX_NAME = "llama-runtime-index"
+
 TOOL_SPEC = {
     "name": "pinecone_vector_store",
     "description": (
@@ -19,7 +21,10 @@ TOOL_SPEC = {
                 "description": "Operation: status, upsert vectors, or query vectors.",
             },
             "api_key": {"type": "string", "description": "Pinecone API key (optional if PINECONE_API_KEY env set)."},
-            "index": {"type": "string", "description": "Pinecone index name."},
+            "index": {
+                "type": "string",
+                "description": f"Pinecone index name (default: {DEFAULT_INDEX_NAME}).",
+            },
             "create_if_missing": {"type": "boolean", "description": "Create index when missing."},
             "dimension": {"type": "integer", "description": "Vector dimension (required if creating index)."},
             "metric": {"type": "string", "description": "Similarity metric, default cosine."},
@@ -71,9 +76,7 @@ def run(args: dict, context: dict) -> dict:
         names = _extract_index_names(indexes)
         return {"ok": True, "index_count": len(names), "indexes": names}
 
-    index_name = str(args.get("index", "")).strip()
-    if not index_name:
-        return {"error": "index is required for upsert/query"}
+    index_name = str(args.get("index") or DEFAULT_INDEX_NAME).strip()
 
     idx_result = _ensure_index(pc, index_name, args, ServerlessSpec)
     if "error" in idx_result:

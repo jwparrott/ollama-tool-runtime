@@ -60,6 +60,9 @@ python main.py chat --model llama3.1 --prompt "Hello"
 python main.py chat-interactive --max-steps 12
 python main.py gui --max-steps 12
 python main.py gui --model llama3.1 --no-voice
+python main.py bridge-run --model llama3.1
+python main.py bridge-run --model llama3.1 --once
+python main.py voice-webhook-run --model llama3.1 --host 0.0.0.0 --port 8787
 python main.py setup
 python main.py list-tools
 python main.py snapshot --note "manual checkpoint"
@@ -112,6 +115,59 @@ To reduce redundant web workflows, use `web_data_pipeline` as the default unifie
 - web search
 - URL fetch
 - scrape delegation
+
+## Messaging bridge (Telegram + SMS/voice)
+
+The runtime can run an always-on bridge that accepts inbound prompts without terminal input:
+
+- Telegram bot messages (long polling)
+- Twilio SMS (poll inbound messages sent to your Twilio number)
+
+Command:
+
+```powershell
+python main.py bridge-run --model llama3.1
+```
+
+Optional one-cycle run for diagnostics:
+
+```powershell
+python main.py bridge-run --model llama3.1 --once
+```
+
+Environment variables:
+
+- `TELEGRAM_BOT_TOKEN`
+- `BRIDGE_TELEGRAM_ACK_TEXT` (optional immediate acknowledgement sent before model response; default: `Message received. Processing now...`)
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_FROM_NUMBER`
+
+Optional allow-lists:
+
+- `BRIDGE_ALLOWED_TELEGRAM_CHAT_IDS` (comma-separated chat IDs)
+- `BRIDGE_ALLOWED_SMS_FROM` (comma-separated phone numbers)
+
+The `messaging_bridge_admin` tool can send Telegram messages, send SMS, place outbound TTS calls, and check bridge status.
+
+### Inbound voice calls (speech-to-text loop)
+
+Inbound phone-call conversation is supported through Twilio webhooks:
+
+```powershell
+python main.py voice-webhook-run --model llama3.1 --host 0.0.0.0 --port 8787
+```
+
+Webhook endpoints served:
+
+- `POST /voice/incoming`
+- `POST /voice/gather`
+
+Configure your Twilio phone number Voice webhook URL to:
+
+- `https://<public-host>/voice/incoming`
+
+If running locally, expose the webhook with a tunnel (for example ngrok) and point Twilio to the public HTTPS URL.
 
 ## How self-update safety works
 

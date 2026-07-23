@@ -55,6 +55,7 @@ class ToolChatEngine:
         tool_fn = self.registry.get_callable(name)
         project_root = getattr(self.builtin_tools, "project_root", None)
         context: dict[str, Any] = {"runtime": "ollama-tool-runtime"}
+        context["engine"] = self
         if isinstance(project_root, Path):
             context["project_root"] = str(project_root.resolve())
         return tool_fn(args, context)

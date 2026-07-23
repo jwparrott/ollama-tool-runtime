@@ -59,7 +59,7 @@ class PineconeVectorStoreTests(unittest.TestCase):
                 self.api_key = api_key
 
             def list_indexes(self):
-                return ["demo-index"]
+                return ["demo-index", "llama-runtime-index"]
 
             def Index(self, index_name):
                 _ = index_name
@@ -78,7 +78,6 @@ class PineconeVectorStoreTests(unittest.TestCase):
                 {
                     "action": "query",
                     "api_key": "k",
-                    "index": "demo-index",
                     "vector": [0.1, 0.2, 0.3],
                     "top_k": 1,
                 },

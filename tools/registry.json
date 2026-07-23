@@ -98,5 +98,10 @@
     "name": "web_data_pipeline",
     "module": "tools.custom.web_data_pipeline",
     "enabled": true
+  },
+  {
+    "name": "messaging_bridge_admin",
+    "module": "tools.custom.messaging_bridge_admin",
+    "enabled": true
   }
 ]

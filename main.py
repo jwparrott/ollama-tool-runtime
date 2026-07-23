@@ -8,11 +8,13 @@ from pathlib import Path
 from agent_runtime.builtin_tools import BuiltinTools
 from agent_runtime.config import RuntimeConfig
 from agent_runtime.engine import ToolChatEngine
+from agent_runtime.messaging_bridge import MessagingBridgeService
 from agent_runtime.ollama_client import OllamaClient
 from agent_runtime.settings import RuntimeSettings, SettingsManager
 from agent_runtime.self_update import SelfUpdater
 from agent_runtime.snapshots import SnapshotManager
 from agent_runtime.tool_registry import ToolRegistry
+from agent_runtime.voice_webhook import TwilioVoiceWebhookService
 
 
 def build_runtime(
@@ -72,6 +74,26 @@ def cli() -> None:
 
     tests = sub.add_parser("run-tests", help="Run tests command.")
     tests.add_argument("--test-cmd", default="", help="Override test command")
+
+    bridge = sub.add_parser("bridge-run", help="Run background messaging bridge (Telegram/Twilio SMS).")
+    bridge.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
+    bridge.add_argument("--context-window", type=int, default=0, help="Context window tokens (defaults to configured setting)")
+    bridge.add_argument("--timeout", type=int, default=0, help="Ollama request timeout in seconds (default: 600)")
+    bridge.add_argument("--max-steps", type=int, default=12, help="Maximum tool loop steps per incoming prompt")
+    bridge.add_argument("--poll-interval", type=int, default=2, help="Polling interval between cycles in seconds")
+    bridge.add_argument("--once", action="store_true", help="Run one poll cycle then exit")
+
+    voice_bridge = sub.add_parser("voice-webhook-run", help="Run inbound Twilio voice webhook server.")
+    voice_bridge.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
+    voice_bridge.add_argument("--context-window", type=int, default=0, help="Context window tokens (defaults to configured setting)")
+    voice_bridge.add_argument("--timeout", type=int, default=0, help="Ollama request timeout in seconds (default: 600)")
+    voice_bridge.add_argument("--max-steps", type=int, default=12, help="Maximum tool loop steps for each voice turn")
+    voice_bridge.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
+    voice_bridge.add_argument("--port", type=int, default=8787, help="Bind port (default: 8787)")
+    voice_bridge.add_argument("--path-prefix", default="/voice", help="Webhook path prefix (default: /voice)")
+    voice_bridge.add_argument("--voice", default="alice", help="Twilio voice name (default: alice)")
+    voice_bridge.add_argument("--language", default="en-US", help="Twilio language code (default: en-US)")
+    voice_bridge.add_argument("--max-call-turns", type=int, default=12, help="Maximum turns per inbound call")
 
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
@@ -150,6 +172,51 @@ def cli() -> None:
         result = updater.run_tests(command=command)
         print(json.dumps(result, indent=2))
         raise SystemExit(0 if result["ok"] else 1)
+
+    if args.command == "bridge-run":
+        bridge = MessagingBridgeService(
+            engine=engine,
+            model=resolved_model,
+            project_root=root,
+            context_window_tokens=resolved_context_window,
+            max_steps=args.max_steps,
+            poll_interval_seconds=max(1, args.poll_interval),
+        )
+        if args.once:
+            result = bridge.run_once()
+            print(json.dumps(result, indent=2))
+            return
+        print("Messaging bridge started. Press Ctrl+C to stop.")
+        try:
+            bridge.run_forever()
+        except KeyboardInterrupt:
+            print("\nMessaging bridge stopped.")
+        return
+
+    if args.command == "voice-webhook-run":
+        service = TwilioVoiceWebhookService(
+            engine=engine,
+            model=resolved_model,
+            project_root=root,
+            context_window_tokens=resolved_context_window,
+            max_steps=max(1, args.max_steps),
+            host=args.host,
+            port=max(1, args.port),
+            path_prefix=args.path_prefix,
+            voice=args.voice,
+            language=args.language,
+            max_turns_per_call=max(1, args.max_call_turns),
+        )
+        print(
+            "Twilio voice webhook server started. "
+            f"POST {args.path_prefix.rstrip('/')}/incoming and {args.path_prefix.rstrip('/')}/gather "
+            f"on {args.host}:{args.port}"
+        )
+        try:
+            service.run()
+        except KeyboardInterrupt:
+            print("\nVoice webhook server stopped.")
+        return
 
     raise SystemExit(2)
 

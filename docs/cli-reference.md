@@ -100,3 +100,41 @@ Runs default tests or custom command.
 python main.py run-tests
 python main.py run-tests --test-cmd "python -m unittest discover -s tests"
 ```
+
+## `bridge-run`
+
+Runs the background messaging bridge that ingests prompts from Telegram and Twilio SMS, sends them through the LLM runtime, and returns responses to the same channel.
+
+```powershell
+python main.py bridge-run --model llama3.1
+python main.py bridge-run --model llama3.1 --once
+```
+
+Arguments:
+- `--model` (optional, uses configured default when omitted)
+- `--context-window` (optional, uses configured default when omitted)
+- `--timeout` (optional): Ollama request timeout
+- `--max-steps` (optional, default `12`)
+- `--poll-interval` (optional, default `2`)
+- `--once` (optional): run one poll cycle then exit
+
+## `voice-webhook-run`
+
+Runs an HTTP webhook server for inbound Twilio voice calls, supports STT (`<Gather input="speech">`) and back-and-forth call conversation.
+
+```powershell
+python main.py voice-webhook-run --model llama3.1
+python main.py voice-webhook-run --model llama3.1 --host 0.0.0.0 --port 8787 --path-prefix /voice
+```
+
+Arguments:
+- `--model` (optional, uses configured default when omitted)
+- `--context-window` (optional, uses configured default when omitted)
+- `--timeout` (optional): Ollama request timeout
+- `--max-steps` (optional, default `12`): max tool loop steps per voice turn
+- `--host` (optional, default `0.0.0.0`)
+- `--port` (optional, default `8787`)
+- `--path-prefix` (optional, default `/voice`)
+- `--voice` (optional, default `alice`)
+- `--language` (optional, default `en-US`)
+- `--max-call-turns` (optional, default `12`)

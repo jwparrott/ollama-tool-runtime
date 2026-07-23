@@ -70,11 +70,12 @@ These tools provide real-time data and are registered in [tools/registry.json](.
 - `hackernews_top`: top stories via Hacker News Firebase API.
 - `conversation_memory`: persistent chat/decision log with positive or negative reinforcement feedback.
 - `shared_data_cleaner_parser`: ingest/clean text from shared sources and parse transcript-style single or multi-speaker turns.
-- `pinecone_vector_store`: Pinecone status/upsert/query integration with optional index bootstrap.
+- `pinecone_vector_store`: Pinecone status/upsert/query integration with optional index bootstrap (defaults to `llama-runtime-index` when `index` is omitted).
 - `haystack_rag`: lightweight Haystack ingest/query retrieval tool.
 - `browser_automation`: rendered-page extraction through Playwright or Selenium.
 - `firecrawl_client`: Firecrawl scrape/crawl/map API integration.
 - `web_data_pipeline`: unified web entry point that delegates to search/fetch/scrape to reduce overlap.
+- `messaging_bridge_admin`: manage Telegram/Twilio messaging bridge operations and outbound TTS calls.
 
 ## Redundancy-reduction guidance
 
