@@ -13,5 +13,40 @@
     "name": "web_search",
     "module": "tools.custom.web_search",
     "enabled": true
+  },
+  {
+    "name": "read_file",
+    "module": "tools.custom.read_file",
+    "enabled": true
+  },
+  {
+    "name": "write_file",
+    "module": "tools.custom.write_file",
+    "enabled": true
+  },
+  {
+    "name": "edit_file",
+    "module": "tools.custom.edit_file",
+    "enabled": true
+  },
+  {
+    "name": "find_files",
+    "module": "tools.custom.find_files",
+    "enabled": true
+  },
+  {
+    "name": "search_in_files",
+    "module": "tools.custom.search_in_files",
+    "enabled": true
+  },
+  {
+    "name": "shell_command",
+    "module": "tools.custom.shell_command",
+    "enabled": true
+  },
+  {
+    "name": "fetch_url",
+    "module": "tools.custom.fetch_url",
+    "enabled": true
   }
 ]
