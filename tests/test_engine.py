@@ -71,6 +71,66 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(reply, "ok")
         self.assertEqual(client.context_windows, [16384])
 
+    def test_tool_keyerror_is_fed_back_not_raised(self) -> None:
+        """A KeyError from a tool (e.g. missing required arg) must not crash the engine."""
+        tool_call_response = {
+            "message": {
+                "content": "",
+                "tool_calls": [{"function": {"name": "bad_tool", "arguments": {}}}],
+            }
+        }
+        final_response = {"message": {"content": "recovered", "tool_calls": []}}
+        responses = iter([tool_call_response, final_response])
+
+        class _KeyErrorClient:
+            def chat(self, model, messages, tools, context_window_tokens):
+                return next(responses)
+
+        class _KeyErrorBuiltins:
+            def specs(self):
+                return []
+
+            def dispatch(self):
+                def _raise(args):
+                    raise KeyError("description")
+                return {"bad_tool": _raise}
+
+        engine = ToolChatEngine(
+            client=_KeyErrorClient(), registry=_FakeRegistry(), builtin_tools=_KeyErrorBuiltins()
+        )
+        reply = engine.run(model="fake", user_prompt="trigger keyerror")
+        self.assertEqual(reply, "recovered")
+
+    def test_tool_value_error_is_fed_back_not_raised(self) -> None:
+        """A ValueError from a tool must not crash the engine."""
+        tool_call_response = {
+            "message": {
+                "content": "",
+                "tool_calls": [{"function": {"name": "bad_tool", "arguments": {}}}],
+            }
+        }
+        final_response = {"message": {"content": "recovered from value error", "tool_calls": []}}
+        responses = iter([tool_call_response, final_response])
+
+        class _ValErrClient:
+            def chat(self, model, messages, tools, context_window_tokens):
+                return next(responses)
+
+        class _ValErrBuiltins:
+            def specs(self):
+                return []
+
+            def dispatch(self):
+                def _raise(args):
+                    raise ValueError("missing required field: description")
+                return {"bad_tool": _raise}
+
+        engine = ToolChatEngine(
+            client=_ValErrClient(), registry=_FakeRegistry(), builtin_tools=_ValErrBuiltins()
+        )
+        reply = engine.run(model="fake", user_prompt="trigger valueerror")
+        self.assertEqual(reply, "recovered from value error")
+
 
 if __name__ == "__main__":
     unittest.main()

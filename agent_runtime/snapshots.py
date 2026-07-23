@@ -17,6 +17,11 @@ class SnapshotRecord:
 
 
 class SnapshotManager:
+    # Directories never captured in snapshots and never removed/overwritten during restore.
+    _PRESERVE_DIRS: frozenset[str] = frozenset({
+        ".runtime", ".git", ".hg", ".svn", ".venv", "venv", ".env",
+    })
+
     def __init__(self, project_root: Path, snapshots_dir: Path) -> None:
         self.project_root = project_root
         self.snapshots_dir = snapshots_dir
@@ -37,13 +42,13 @@ class SnapshotManager:
         now = datetime.now(tz=timezone.utc)
         snapshot_id = now.strftime("%Y%m%d%H%M%S%f")
         base_name = self.snapshots_dir / f"snapshot-{snapshot_id}"
+        ignore = shutil.ignore_patterns(
+            ".runtime", ".git", ".hg", ".svn",
+            "__pycache__", "*.pyc", ".venv", "venv", ".env",
+        )
         with tempfile.TemporaryDirectory() as td:
             staging_root = Path(td) / "staging"
-            shutil.copytree(
-                self.project_root,
-                staging_root,
-                ignore=shutil.ignore_patterns(".runtime", "__pycache__", "*.pyc"),
-            )
+            shutil.copytree(self.project_root, staging_root, ignore=ignore)
             archive_path = shutil.make_archive(str(base_name), "zip", root_dir=staging_root)
         record = SnapshotRecord(
             id=snapshot_id,
@@ -76,12 +81,16 @@ class SnapshotManager:
             for path in self.project_root.iterdir():
                 if path.resolve() == runtime_root:
                     continue
+                if path.name in self._PRESERVE_DIRS:
+                    continue
                 if path.is_dir():
                     shutil.rmtree(path)
                 else:
                     path.unlink()
 
             for source in unpack_dir.iterdir():
+                if source.name in self._PRESERVE_DIRS:
+                    continue
                 target = self.project_root / source.name
                 if source.is_dir():
                     shutil.copytree(source, target)

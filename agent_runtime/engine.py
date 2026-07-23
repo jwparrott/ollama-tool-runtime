@@ -92,13 +92,19 @@ class ToolChatEngine:
                     if not isinstance(arguments, dict):
                         raise RuntimeError(f"Tool arguments for '{tool_name}' must be object or JSON string.")
                     parsed_args = arguments
-                result = self._execute_tool(str(tool_name), parsed_args)
+                try:
+                    result = self._execute_tool(str(tool_name), parsed_args)
+                    tool_content = json.dumps(result)
+                except (KeyError, ValueError, TypeError) as exc:
+                    tool_content = json.dumps({"error": str(exc), "tool": str(tool_name)})
+                except Exception as exc:  # noqa: BLE001
+                    tool_content = json.dumps({"error": f"Unexpected error: {exc}", "tool": str(tool_name)})
                 messages.append(
                     {
                         "role": "tool",
                         "name": str(tool_name),
                         "tool_name": str(tool_name),
-                        "content": json.dumps(result),
+                        "content": tool_content,
                     }
                 )
 

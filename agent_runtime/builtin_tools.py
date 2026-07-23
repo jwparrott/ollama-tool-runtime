@@ -121,6 +121,13 @@ class BuiltinTools:
         }
 
     def register_python_tool(self, args: dict[str, Any]) -> dict[str, Any]:
+        required = ("name", "description", "source_code", "parameters_schema_json")
+        missing = [f for f in required if not args.get(f)]
+        if missing:
+            raise ValueError(
+                f"register_python_tool requires: {', '.join(required)}. "
+                f"Missing or empty: {', '.join(missing)}"
+            )
         name = _safe_tool_name(str(args["name"]))
         description = str(args["description"])
         source_code = str(args["source_code"])
