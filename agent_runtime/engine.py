@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from agent_runtime.builtin_tools import BuiltinTools
@@ -52,7 +53,25 @@ class ToolChatEngine:
         if name in builtins:
             return builtins[name](args)
         tool_fn = self.registry.get_callable(name)
-        return tool_fn(args, {"runtime": "ollama-tool-runtime"})
+        project_root = getattr(self.builtin_tools, "project_root", None)
+        context: dict[str, Any] = {"runtime": "ollama-tool-runtime"}
+        if isinstance(project_root, Path):
+            context["project_root"] = str(project_root.resolve())
+        return tool_fn(args, context)
+
+    @staticmethod
+    def _parse_tool_arguments(arguments: Any, tool_name: str) -> dict[str, Any]:
+        if isinstance(arguments, str):
+            try:
+                parsed = json.loads(arguments or "{}")
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Tool arguments for '{tool_name}' are not valid JSON: {exc.msg}") from exc
+            if not isinstance(parsed, dict):
+                raise ValueError(f"Tool arguments for '{tool_name}' must decode to a JSON object.")
+            return parsed
+        if not isinstance(arguments, dict):
+            raise ValueError(f"Tool arguments for '{tool_name}' must be object or JSON string.")
+        return arguments
 
     def run_with_messages(
         self,
@@ -85,17 +104,20 @@ class ToolChatEngine:
                 tool_name = function.get("name")
                 arguments = function.get("arguments", {})
                 if not tool_name:
-                    raise RuntimeError("Received tool call without function.name.")
-                if isinstance(arguments, str):
-                    parsed_args = json.loads(arguments or "{}")
-                else:
-                    if not isinstance(arguments, dict):
-                        raise RuntimeError(f"Tool arguments for '{tool_name}' must be object or JSON string.")
-                    parsed_args = arguments
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "name": "unknown_tool",
+                            "tool_name": "unknown_tool",
+                            "content": json.dumps({"error": "Received tool call without function.name."}),
+                        }
+                    )
+                    continue
                 try:
+                    parsed_args = self._parse_tool_arguments(arguments, str(tool_name))
                     result = self._execute_tool(str(tool_name), parsed_args)
                     tool_content = json.dumps(result)
-                except (KeyError, ValueError, TypeError) as exc:
+                except (KeyError, ValueError, TypeError, RuntimeError) as exc:
                     tool_content = json.dumps({"error": str(exc), "tool": str(tool_name)})
                 except Exception as exc:  # noqa: BLE001
                     tool_content = json.dumps({"error": f"Unexpected error: {exc}", "tool": str(tool_name)})

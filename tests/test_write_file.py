@@ -31,6 +31,8 @@ class WriteFileTests(unittest.TestCase):
         result = run({"path": "new.txt", "content": "hello world"}, self.ctx)
         self.assertTrue(result.get("ok"))
         self.assertEqual((self.root / "new.txt").read_text(encoding="utf-8"), "hello world")
+        self.assertTrue(result.get("created"))
+        self.assertFalse(result.get("overwritten"))
 
     def test_creates_parent_dirs(self):
         result = run({"path": "a/b/c.txt", "content": "deep"}, self.ctx)
@@ -48,6 +50,8 @@ class WriteFileTests(unittest.TestCase):
         result = run({"path": "existing.txt", "content": "new", "overwrite": True}, self.ctx)
         self.assertTrue(result.get("ok"))
         self.assertEqual((self.root / "existing.txt").read_text(encoding="utf-8"), "new")
+        self.assertFalse(result.get("created"))
+        self.assertTrue(result.get("overwritten"))
 
     def test_path_outside_root_rejected(self):
         result = run({"path": "../../evil.txt", "content": "bad"}, self.ctx)

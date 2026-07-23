@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
+from pathlib import Path
 
 from agent_runtime.engine import ToolChatEngine
 
@@ -130,6 +131,84 @@ class EngineTests(unittest.TestCase):
         )
         reply = engine.run(model="fake", user_prompt="trigger valueerror")
         self.assertEqual(reply, "recovered from value error")
+
+    def test_invalid_tool_json_args_are_fed_back_not_raised(self) -> None:
+        tool_call_response = {
+            "message": {
+                "content": "",
+                "tool_calls": [{"function": {"name": "bad_tool", "arguments": "{not-json"}}],
+            }
+        }
+        final_response = {"message": {"content": "recovered from invalid json", "tool_calls": []}}
+        responses = iter([tool_call_response, final_response])
+
+        class _BadJsonClient:
+            def chat(self, model, messages, tools, context_window_tokens):
+                return next(responses)
+
+        class _DummyBuiltins:
+            def specs(self):
+                return []
+
+            def dispatch(self):
+                return {"bad_tool": lambda args: {"ok": True, "args": args}}
+
+        engine = ToolChatEngine(
+            client=_BadJsonClient(), registry=_FakeRegistry(), builtin_tools=_DummyBuiltins()
+        )
+        reply = engine.run(model="fake", user_prompt="trigger bad json")
+        self.assertEqual(reply, "recovered from invalid json")
+
+    def test_custom_tool_receives_project_root_in_context(self) -> None:
+        class _CtxRegistry:
+            def get_specs(self):
+                return [{"type": "function", "function": {"name": "ctx_tool", "parameters": {"type": "object"}}}]
+
+            def get_callable(self, name: str):
+                if name != "ctx_tool":
+                    raise KeyError(name)
+
+                def _run(args, context):
+                    _ = args
+                    return {"project_root": context.get("project_root"), "runtime": context.get("runtime")}
+
+                return _run
+
+        class _BuiltinsWithRoot:
+            project_root = Path(__file__).resolve().parent.parent
+
+            def specs(self):
+                return []
+
+            def dispatch(self):
+                return {}
+
+        class _OneToolCallClient:
+            def __init__(self):
+                self._responses = iter(
+                    [
+                        {
+                            "message": {
+                                "content": "",
+                                "tool_calls": [{"function": {"name": "ctx_tool", "arguments": {}}}],
+                            }
+                        },
+                        {"message": {"content": "done", "tool_calls": []}},
+                    ]
+                )
+                self.last_messages = None
+
+            def chat(self, model, messages, tools, context_window_tokens):
+                self.last_messages = messages
+                return next(self._responses)
+
+        client = _OneToolCallClient()
+        engine = ToolChatEngine(client=client, registry=_CtxRegistry(), builtin_tools=_BuiltinsWithRoot())
+        reply = engine.run(model="fake", user_prompt="test context")
+        self.assertEqual(reply, "done")
+        tool_messages = [m for m in client.last_messages if m.get("role") == "tool"]
+        self.assertTrue(tool_messages)
+        self.assertIn("project_root", tool_messages[0]["content"])
 
 
 if __name__ == "__main__":

@@ -44,7 +44,42 @@ class BuiltinToolsTests(unittest.TestCase):
 
             self.assertEqual(tool_path.read_text(encoding="utf-8"), original_content)
 
+    def test_list_model_skills_returns_catalog(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "proj"
+            root.mkdir(parents=True, exist_ok=True)
+
+            registry = ToolRegistry(root / "tools" / "registry.json")
+            snapshots = SnapshotManager(project_root=root, snapshots_dir=root / ".runtime" / "snapshots")
+            updater = SelfUpdater(
+                project_root=root,
+                snapshots=snapshots,
+                default_test_command='python -c "import sys; sys.exit(0)"',
+            )
+            builtins = BuiltinTools(project_root=root, registry=registry, snapshots=snapshots, updater=updater)
+
+            result = builtins.list_model_skills({})
+            self.assertIn("skills", result)
+            self.assertTrue(result["skills"])
+            self.assertIn("name", result["skills"][0])
+
+    def test_get_model_skill_by_name(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "proj"
+            root.mkdir(parents=True, exist_ok=True)
+
+            registry = ToolRegistry(root / "tools" / "registry.json")
+            snapshots = SnapshotManager(project_root=root, snapshots_dir=root / ".runtime" / "snapshots")
+            updater = SelfUpdater(
+                project_root=root,
+                snapshots=snapshots,
+                default_test_command='python -c "import sys; sys.exit(0)"',
+            )
+            builtins = BuiltinTools(project_root=root, registry=registry, snapshots=snapshots, updater=updater)
+
+            result = builtins.get_model_skill({"name": "research"})
+            self.assertEqual(result["skill"]["name"], "research")
+
 
 if __name__ == "__main__":
     unittest.main()
-

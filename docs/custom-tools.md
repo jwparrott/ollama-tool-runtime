@@ -60,3 +60,13 @@ Ask the model to call built-in registration tool.
 - Keep side effects explicit and small.
 - Run `python main.py list-tools` after registration.
 
+## Internet-backed tools currently included
+
+These tools provide real-time data and are registered in [tools/registry.json](../tools/registry.json):
+
+- `web_search`: DuckDuckGo search (text/news).
+- `wikipedia_search`: Wikipedia lookup via MediaWiki API.
+- `weather_forecast`: weather via Open-Meteo geocoding + forecast APIs.
+- `hackernews_top`: top stories via Hacker News Firebase API.
+- `conversation_memory`: persistent chat/decision log with positive or negative reinforcement feedback.
+- `shared_data_cleaner_parser`: ingest/clean text from shared sources and parse transcript-style single or multi-speaker turns.

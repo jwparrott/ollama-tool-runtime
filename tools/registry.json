@@ -48,5 +48,30 @@
     "name": "fetch_url",
     "module": "tools.custom.fetch_url",
     "enabled": true
+  },
+  {
+    "name": "wikipedia_search",
+    "module": "tools.custom.wikipedia_search",
+    "enabled": true
+  },
+  {
+    "name": "weather_forecast",
+    "module": "tools.custom.weather_forecast",
+    "enabled": true
+  },
+  {
+    "name": "hackernews_top",
+    "module": "tools.custom.hackernews_top",
+    "enabled": true
+  },
+  {
+    "name": "conversation_memory",
+    "module": "tools.custom.conversation_memory",
+    "enabled": true
+  },
+  {
+    "name": "shared_data_cleaner_parser",
+    "module": "tools.custom.shared_data_cleaner_parser",
+    "enabled": true
   }
 ]

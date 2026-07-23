@@ -16,6 +16,7 @@ For fresh Windows/Linux bootstrap scripts (install + configure + model pull), se
 
 - Runs a tool-enabled chat loop against local Ollama.
 - Loads custom tools from a registry-backed plugin folder.
+- Exposes built-in workflow skills (`list_model_skills`, `get_model_skill`) to guide the model through repeatable engineering tasks.
 - Exposes built-in admin tools so the model can:
   - register new tools,
   - update files in this project,
@@ -82,6 +83,20 @@ python main.py setup
 - The bootstrap scripts in `scripts/` fetch the current popular model suggestions from Ollama's library page instead of using a stale hardcoded list.
 - Manual model entry accepts common near-matches such as `gemma 3` or `deepseek r1 7b` and resolves them to canonical Ollama model names when possible.
 - Ollama-specific steps such as `ollama pull` are skipped when the `ollama` command is not yet available in the current shell after installation.
+
+## Real-time internet tools
+
+This runtime now includes internet-backed tools for current information:
+
+- `web_search` (DuckDuckGo)
+- `wikipedia_search` (MediaWiki API)
+- `weather_forecast` (Open-Meteo)
+- `hackernews_top` (Hacker News API)
+
+It also includes conversation-learning and transcript tooling:
+
+- `conversation_memory` for persistent chat history, decision logs, and positive/negative user feedback reinforcement
+- `shared_data_cleaner_parser` for collecting/cleaning unstructured text from files/URLs and parsing multi-speaker conversations
 
 ## How self-update safety works
 

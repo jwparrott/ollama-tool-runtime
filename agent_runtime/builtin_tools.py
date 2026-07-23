@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
+from agent_runtime.skills import get_model_skill, list_model_skills
 from agent_runtime.self_update import SelfUpdater
 from agent_runtime.snapshots import SnapshotManager
 from agent_runtime.tool_registry import ToolRegistry
@@ -45,6 +46,26 @@ class BuiltinTools:
                             "source_code": {"type": "string"},
                         },
                         "required": ["name", "description", "parameters_schema_json", "source_code"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_model_skills",
+                    "description": "List built-in workflow skills/playbooks the model can follow.",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_model_skill",
+                    "description": "Get one workflow skill/playbook by name.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"name": {"type": "string"}},
+                        "required": ["name"],
                     },
                 },
             },
@@ -115,6 +136,8 @@ class BuiltinTools:
             "register_python_tool": self.register_python_tool,
             "self_update_files": self.self_update_files,
             "run_tests": self.run_tests,
+            "list_model_skills": self.list_model_skills,
+            "get_model_skill": self.get_model_skill,
             "list_snapshots": self.list_snapshots,
             "rollback_snapshot": self.rollback_snapshot,
             "list_tools": self.list_tools,
@@ -172,6 +195,15 @@ class BuiltinTools:
     def run_tests(self, args: dict[str, Any]) -> dict[str, Any]:
         test_command = str(args["test_command"]) if "test_command" in args and args["test_command"] else None
         return self.updater.run_tests(command=test_command)
+
+    def list_model_skills(self, args: dict[str, Any]) -> dict[str, Any]:
+        _ = args
+        return {"skills": list_model_skills()}
+
+    def get_model_skill(self, args: dict[str, Any]) -> dict[str, Any]:
+        if "name" not in args or not str(args["name"]).strip():
+            raise ValueError("get_model_skill requires non-empty 'name'.")
+        return {"skill": get_model_skill(str(args["name"]))}
 
     def list_snapshots(self, args: dict[str, Any]) -> list[dict[str, Any]]:
         _ = args

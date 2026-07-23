@@ -60,6 +60,7 @@ def run(args: dict, context: dict) -> dict:
             )
         }
 
+    existed_before = target.exists()
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
@@ -70,5 +71,6 @@ def run(args: dict, context: dict) -> dict:
         "ok": True,
         "path": str(target.relative_to(project_root)),
         "bytes_written": len(content.encode("utf-8")),
-        "created": not target.exists() or overwrite,
+        "created": not existed_before,
+        "overwritten": existed_before,
     }

@@ -49,6 +49,25 @@ Input:
 Use when:
 - validating changes before/after updates
 
+## `list_model_skills`
+
+Purpose:
+- list reusable workflow skills/playbooks the model can follow
+
+Use when:
+- deciding how to approach a task (review, research, testing, safe updates, new-tool development)
+
+## `get_model_skill`
+
+Purpose:
+- fetch one workflow skill/playbook by name
+
+Input:
+- `name`
+
+Use when:
+- the model needs explicit step-by-step guidance for a specific workflow
+
 ## `list_snapshots`
 
 Purpose:
@@ -75,4 +94,3 @@ Purpose:
 
 Use when:
 - checking whether expected tools are registered and enabled
-
