@@ -15,6 +15,8 @@ class SkillsTests(unittest.TestCase):
         self.assertIn("new-tool-development", names)
         self.assertIn("conversation-memory-learning", names)
         self.assertIn("unstructured-conversation-parsing", names)
+        self.assertIn("retrieval-augmentation-stack", names)
+        self.assertIn("advanced-web-collection", names)
 
     def test_get_model_skill_exact_name(self) -> None:
         skill = get_model_skill("testing")

@@ -116,6 +116,38 @@ _SKILLS: tuple[dict[str, Any], ...] = (
         ],
         "recommended_tools": ["shared_data_cleaner_parser", "fetch_url", "read_file", "write_file"],
     },
+    {
+        "name": "retrieval-augmentation-stack",
+        "summary": "Use Haystack + Pinecone for hybrid retrieval and memory workflows.",
+        "when_to_use": [
+            "Semantic memory and long-context recall",
+            "Document-grounded answer generation",
+            "RAG pipelines combining local and hosted retrieval",
+        ],
+        "playbook": [
+            "Ingest local docs into haystack_rag for fast prototyping.",
+            "Store durable embeddings in pinecone_vector_store.",
+            "Query both paths and reconcile confidence/feedback.",
+            "Persist successful strategies into conversation_memory.",
+        ],
+        "recommended_tools": ["haystack_rag", "pinecone_vector_store", "conversation_memory"],
+    },
+    {
+        "name": "advanced-web-collection",
+        "summary": "Collect dynamic web data via browser automation and Firecrawl pipelines.",
+        "when_to_use": [
+            "JS-heavy pages not captured by simple HTTP fetch",
+            "Multi-page crawl and content extraction workflows",
+            "Normalizing scraped content for downstream parsing",
+        ],
+        "playbook": [
+            "Start with web_data_pipeline search/fetch for quick checks.",
+            "Use browser_automation for rendered DOM extraction.",
+            "Use firecrawl_client for structured scrape/crawl jobs.",
+            "Feed outputs into shared_data_cleaner_parser for turn-level parsing.",
+        ],
+        "recommended_tools": ["web_data_pipeline", "browser_automation", "firecrawl_client", "shared_data_cleaner_parser"],
+    },
 )
 
 

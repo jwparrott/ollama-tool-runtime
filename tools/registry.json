@@ -73,5 +73,30 @@
     "name": "shared_data_cleaner_parser",
     "module": "tools.custom.shared_data_cleaner_parser",
     "enabled": true
+  },
+  {
+    "name": "pinecone_vector_store",
+    "module": "tools.custom.pinecone_vector_store",
+    "enabled": true
+  },
+  {
+    "name": "haystack_rag",
+    "module": "tools.custom.haystack_rag",
+    "enabled": true
+  },
+  {
+    "name": "browser_automation",
+    "module": "tools.custom.browser_automation",
+    "enabled": true
+  },
+  {
+    "name": "firecrawl_client",
+    "module": "tools.custom.firecrawl_client",
+    "enabled": true
+  },
+  {
+    "name": "web_data_pipeline",
+    "module": "tools.custom.web_data_pipeline",
+    "enabled": true
   }
 ]

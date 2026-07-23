@@ -98,6 +98,21 @@ It also includes conversation-learning and transcript tooling:
 - `conversation_memory` for persistent chat history, decision logs, and positive/negative user feedback reinforcement
 - `shared_data_cleaner_parser` for collecting/cleaning unstructured text from files/URLs and parsing multi-speaker conversations
 
+### Integration tools (optional dependencies)
+
+The runtime can also integrate with external platforms when their SDKs/keys are available:
+
+- `pinecone_vector_store` (Pinecone vector DB)
+- `haystack_rag` (Haystack ingestion/retrieval)
+- `browser_automation` (Playwright/Selenium rendered-page extraction)
+- `firecrawl_client` (Firecrawl scrape/crawl/map API)
+
+To reduce redundant web workflows, use `web_data_pipeline` as the default unified entry point for:
+
+- web search
+- URL fetch
+- scrape delegation
+
 ## How self-update safety works
 
 1. Before applying updates, the runtime creates a snapshot zip.

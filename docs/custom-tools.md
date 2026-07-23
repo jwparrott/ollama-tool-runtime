@@ -70,3 +70,16 @@ These tools provide real-time data and are registered in [tools/registry.json](.
 - `hackernews_top`: top stories via Hacker News Firebase API.
 - `conversation_memory`: persistent chat/decision log with positive or negative reinforcement feedback.
 - `shared_data_cleaner_parser`: ingest/clean text from shared sources and parse transcript-style single or multi-speaker turns.
+- `pinecone_vector_store`: Pinecone status/upsert/query integration with optional index bootstrap.
+- `haystack_rag`: lightweight Haystack ingest/query retrieval tool.
+- `browser_automation`: rendered-page extraction through Playwright or Selenium.
+- `firecrawl_client`: Firecrawl scrape/crawl/map API integration.
+- `web_data_pipeline`: unified web entry point that delegates to search/fetch/scrape to reduce overlap.
+
+## Redundancy-reduction guidance
+
+Preferred default sequence for web content tasks:
+
+1. Use `web_data_pipeline` first.
+2. Use `browser_automation` only when dynamic rendering is required.
+3. Use `firecrawl_client` for structured crawl/scrape jobs.
