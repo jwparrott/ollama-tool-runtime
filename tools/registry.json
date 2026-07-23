@@ -3,6 +3,15 @@
     "name": "example_echo",
     "module": "tools.custom.example_echo",
     "enabled": true
+  },
+  {
+    "name": "word_count",
+    "module": "tools.custom.word_count",
+    "enabled": true
+  },
+  {
+    "name": "web_search",
+    "module": "tools.custom.web_search",
+    "enabled": true
   }
 ]
-
