@@ -23,7 +23,11 @@ def build_runtime(
     snapshots = SnapshotManager(project_root=project_root, snapshots_dir=config.snapshots_path)
     updater = SelfUpdater(project_root=project_root, snapshots=snapshots, default_test_command=config.default_test_command)
     builtins = BuiltinTools(project_root=project_root, registry=registry, snapshots=snapshots, updater=updater)
-    engine = ToolChatEngine(client=OllamaClient(config.ollama_url), registry=registry, builtin_tools=builtins)
+    engine = ToolChatEngine(
+        client=OllamaClient(config.ollama_url, timeout_seconds=config.ollama_timeout_seconds),
+        registry=registry,
+        builtin_tools=builtins,
+    )
     settings = SettingsManager(config.settings_path)
     return config, registry, snapshots, updater, builtins, engine, settings
 
@@ -35,6 +39,7 @@ def cli() -> None:
     chat = sub.add_parser("chat", help="Run one tool-enabled chat turn.")
     chat.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
     chat.add_argument("--context-window", type=int, default=0, help="Context window tokens (defaults to configured setting)")
+    chat.add_argument("--timeout", type=int, default=0, help="Ollama request timeout in seconds (default: 600)")
     chat.add_argument("--prompt", required=True, help="User prompt")
 
     chat_interactive = sub.add_parser("chat-interactive", help="Run an interactive multi-turn tool-enabled chat.")
@@ -45,11 +50,13 @@ def cli() -> None:
         default=0,
         help="Context window tokens (defaults to configured setting)",
     )
+    chat_interactive.add_argument("--timeout", type=int, default=0, help="Ollama request timeout in seconds (default: 600)")
     chat_interactive.add_argument("--max-steps", type=int, default=12, help="Maximum tool loop steps per turn")
 
     gui = sub.add_parser("gui", help="Run desktop GUI chat window.")
     gui.add_argument("--model", default="", help="Ollama model name (defaults to configured setting)")
     gui.add_argument("--context-window", type=int, default=0, help="Context window tokens (defaults to configured setting)")
+    gui.add_argument("--timeout", type=int, default=0, help="Ollama request timeout in seconds (default: 600)")
     gui.add_argument("--max-steps", type=int, default=12, help="Maximum tool loop steps per turn")
     gui.add_argument("--no-voice", action="store_true", help="Disable speech-to-text and text-to-speech")
 
@@ -68,7 +75,7 @@ def cli() -> None:
 
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
-    _config, registry, snapshots, updater, builtins, engine, settings_manager = build_runtime(root)
+    config, registry, snapshots, updater, builtins, engine, settings_manager = build_runtime(root)
 
     if args.command == "setup":
         settings = settings_manager.run_setup()
@@ -82,6 +89,8 @@ def cli() -> None:
         if hasattr(args, "context_window") and args.context_window and args.context_window > 0
         else settings.context_window_tokens
     )
+    if hasattr(args, "timeout") and args.timeout and args.timeout > 0:
+        engine.client = OllamaClient(config.ollama_url, timeout_seconds=args.timeout)
 
     if args.command == "chat":
         result = engine.run(

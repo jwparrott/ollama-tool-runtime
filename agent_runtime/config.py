@@ -8,6 +8,7 @@ from pathlib import Path
 class RuntimeConfig:
     project_root: Path
     ollama_url: str = "http://127.0.0.1:11434"
+    ollama_timeout_seconds: int = 600
     registry_file: str = "tools/registry.json"
     snapshot_dir: str = ".runtime/snapshots"
     settings_file: str = ".runtime/settings.json"
