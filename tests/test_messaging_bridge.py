@@ -92,6 +92,19 @@ class MessagingBridgeTests(unittest.TestCase):
                     bridge._poll_telegram_once()
         self.assertEqual(sender.call_args_list[0].kwargs["text"], "Working on it...")
 
+    def test_telegram_poll_timeout_is_transient(self) -> None:
+        with patch.dict("os.environ", {"TELEGRAM_BOT_TOKEN": "t"}, clear=True):
+            bridge = self._bridge()
+            with patch(
+                "agent_runtime.messaging_bridge.telegram_get_updates",
+                side_effect=RuntimeError("Request timed out."),
+            ):
+                result = bridge._poll_telegram_once()
+        self.assertTrue(result["enabled"])
+        self.assertEqual(result["processed_prompts"], 0)
+        self.assertEqual(result["sent_replies"], 0)
+        self.assertIn("timed out", str(result.get("transient_error", "")).lower())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -64,7 +64,19 @@ class MessagingBridgeService:
             return {"enabled": False, "reason": "TELEGRAM_BOT_TOKEN not set"}
 
         offset = int(self.state.get("telegram_offset", 0))
-        updates = telegram_get_updates(self.telegram_bot_token, offset=offset, timeout=20)
+        try:
+            updates = telegram_get_updates(self.telegram_bot_token, offset=offset, timeout=20)
+        except RuntimeError as exc:
+            message = str(exc).strip() or "Telegram polling failed."
+            lowered = message.lower()
+            if "timed out" in lowered or "network error" in lowered:
+                return {
+                    "enabled": True,
+                    "processed_prompts": 0,
+                    "sent_replies": 0,
+                    "transient_error": message,
+                }
+            raise
         processed = 0
         replies = 0
         for update in updates:
