@@ -8,6 +8,7 @@ from typing import Any
 
 from agent_runtime.messaging_bridge import MessagingBridgeService
 from agent_runtime.messaging_channels import telegram_send_message, twilio_place_tts_call, twilio_send_sms
+from tools.custom.conversation_memory import run as conversation_memory_run
 
 TOOL_SPEC = {
     "name": "messaging_bridge_admin",
@@ -47,7 +48,7 @@ def run(args: dict, context: dict) -> dict:
     if action == "poll_once":
         return _poll_once(args, context)
     if action == "send_telegram":
-        return _send_telegram(args)
+        return _send_telegram(args, context)
     if action == "send_sms":
         return _send_sms(args)
     return _call_tts(args)
@@ -86,7 +87,7 @@ def _poll_once(args: dict, context: dict) -> dict:
     return bridge.run_once()
 
 
-def _send_telegram(args: dict) -> dict:
+def _send_telegram(args: dict, context: dict) -> dict:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         return {"error": "TELEGRAM_BOT_TOKEN is not set."}
@@ -98,7 +99,22 @@ def _send_telegram(args: dict) -> dict:
         telegram_send_message(token, chat_id=chat_id, text=text)
     except Exception as exc:  # noqa: BLE001
         return {"error": f"Telegram send failed: {exc}"}
-    return {"ok": True, "channel": "telegram", "chat_id": chat_id}
+    memory_result = conversation_memory_run(
+        {
+            "action": "log_turn",
+            "session_id": f"telegram:{chat_id}",
+            "role": "user",
+            "content": text,
+        },
+        context,
+    )
+    result = {"ok": True, "channel": "telegram", "chat_id": chat_id}
+    if isinstance(memory_result, dict) and "error" in memory_result:
+        result["memory_logged"] = False
+        result["memory_error"] = str(memory_result["error"])
+    else:
+        result["memory_logged"] = True
+    return result
 
 
 def _send_sms(args: dict) -> dict:

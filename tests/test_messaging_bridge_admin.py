@@ -31,6 +31,25 @@ class MessagingBridgeAdminTests(unittest.TestCase):
             result = run({"action": "send_telegram", "chat_id": "1", "text": "x"}, self.ctx)
         self.assertIn("error", result)
 
+    def test_send_telegram_logs_memory_best_effort(self) -> None:
+        with patch.dict("os.environ", {"TELEGRAM_BOT_TOKEN": "t"}, clear=True):
+            with patch("tools.custom.messaging_bridge_admin.telegram_send_message") as send_mock:
+                with patch("tools.custom.messaging_bridge_admin.conversation_memory_run", return_value={"ok": True, "entry_id": "e1"}):
+                    result = run({"action": "send_telegram", "chat_id": "1", "text": "hello"}, self.ctx)
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["memory_logged"])
+        send_mock.assert_called_once()
+
+    def test_send_telegram_memory_error_does_not_block_send(self) -> None:
+        with patch.dict("os.environ", {"TELEGRAM_BOT_TOKEN": "t"}, clear=True):
+            with patch("tools.custom.messaging_bridge_admin.telegram_send_message") as send_mock:
+                with patch("tools.custom.messaging_bridge_admin.conversation_memory_run", return_value={"error": "boom"}):
+                    result = run({"action": "send_telegram", "chat_id": "1", "text": "hello"}, self.ctx)
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["memory_logged"])
+        self.assertIn("memory_error", result)
+        send_mock.assert_called_once()
+
     def test_send_sms_success(self) -> None:
         env = {
             "TWILIO_ACCOUNT_SID": "sid",
